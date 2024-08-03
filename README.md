@@ -1,2 +1,2 @@
 # ExcelToWordMaven
-translate the word file to doc
+translate the row data in excel file to a new doc
