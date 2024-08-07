@@ -1,7 +1,9 @@
 import jakarta.xml.bind.JAXBElement;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
 import java.io.*;
+
 import org.apache.poi.xwpf.usermodel.*;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
@@ -9,21 +11,27 @@ import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
 import org.docx4j.openpackaging.parts.WordprocessingML.MainDocumentPart;
 import org.docx4j.wml.Text;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 class FilePath {
     // Path to the file
-    public static final String EXCEL_FILE_PATH = "src/main/resources/excel.xlsx";
-    public static final String DOC_FILE_PATH = "src/main/resources/application.docx";
+    public static final String EXCEL_FILE_PATH = "src/main/resources/excel2.xlsx";
+    public static final String DOC_FILE_PATH = "src/main/resources/application2.docx";
 
     public static final String ICON_FILE_PATH_PEEFIX = "src/main/resources/icon/";
-    public static final String ICON_FILE_PATH_SUFFIX = ".png";
+    public static final String ICON_FILE_PATH_SUFFIX_PNG = ".png";
+    public static final String ICON_FILE_PATH_SUFFIX_JPG = ".jpg";
 
     public static final String FILLED_DOC_FILE_PATH_PREFIX = "src/main/resources/";
     public static final String FILLED_DOC_FILE_PATH_SUFFIX = ".docx";
 }
+
 class FieldName {
     // Field names in the Excel file
     public static final String NO = "NO";
@@ -49,7 +57,30 @@ class FieldName {
     public static final String CERTIFICATE = "CERTIFICATE";
 
 }
+
 class ReadIO {
+    HashMap<Integer, String> dictionary = new HashMap<>();
+
+    {
+        dictionary.put(0, FieldName.NO);
+        dictionary.put(1, FieldName.NAME);
+        dictionary.put(2, FieldName.GENDER);
+        dictionary.put(3, FieldName.HIGHEST_EDUCATION);
+        dictionary.put(4, FieldName.NATIONALITY);
+        dictionary.put(5, FieldName.CARD_TYPE);
+        dictionary.put(6, FieldName.ID_CARD_NUMBER);
+        dictionary.put(7, FieldName.DATE_OF_BIRTH);
+        dictionary.put(8, FieldName.PERSONAL_HEALTH_COMMITMENT_LETTER);
+        dictionary.put(9, FieldName.PHYSICAL_CONDITION);
+        dictionary.put(10, FieldName.JOB_POSITION);
+        dictionary.put(11, FieldName.APPLICATION_PROJECT);
+        dictionary.put(12, FieldName.EMPLOYMENT_CATEGORY);
+        dictionary.put(13, FieldName.TRAINING_TYPE);
+        dictionary.put(14, FieldName.TELEPHONE);
+        dictionary.put(15, FieldName.WORK_UNIT);
+//        dictionary.put(16, FieldName.CORRESPONDENCE_ADDRESS);
+    }
+
     public HashMap<String, String> readFromExcel(int row_id) {
         HashMap<String, String> mappings = new HashMap<>();
         try (FileInputStream fis = new FileInputStream(FilePath.EXCEL_FILE_PATH);
@@ -60,39 +91,30 @@ class ReadIO {
             Row row = sheet.getRow(row_id); // 读取第一行数据
 
             // 获取每一列的数据
-            int no = (int) row.getCell(0).getNumericCellValue();
-            mappings.put(FieldName.NO, String.valueOf(no));
-            String name = row.getCell(1).getStringCellValue();
-            mappings.put(FieldName.NAME, name);
-            String gender = row.getCell(2).getStringCellValue();
-            mappings.put(FieldName.GENDER,gender);
-            String highestEducation = row.getCell(3).getStringCellValue();
-            mappings.put(FieldName.HIGHEST_EDUCATION,highestEducation);
-            String nationality = row.getCell(4).getStringCellValue();
-            mappings.put(FieldName.NATIONALITY,nationality);
-            String cardType = row.getCell(5).getStringCellValue();
-            mappings.put(FieldName.CARD_TYPE,cardType);
-            String idCardNumber = row.getCell(6).getStringCellValue();
-            mappings.put(FieldName.ID_CARD_NUMBER,idCardNumber);
-            String dateOfBirth = row.getCell(7).getStringCellValue();
-            mappings.put(FieldName.DATE_OF_BIRTH,dateOfBirth);
-            String personalHealthCommitmentLetter = row.getCell(8).getStringCellValue();
-            mappings.put(FieldName.PERSONAL_HEALTH_COMMITMENT_LETTER,personalHealthCommitmentLetter);
-            String physicalCondition = row.getCell(9).getStringCellValue();
-            mappings.put(FieldName.PHYSICAL_CONDITION,physicalCondition);
-            String jobPosition = row.getCell(10).getStringCellValue();
-            mappings.put(FieldName.JOB_POSITION,jobPosition);
-            String applicationProject = row.getCell(11).getStringCellValue();
-            mappings.put(FieldName.APPLICATION_PROJECT,applicationProject);
-            String employmentCategory = row.getCell(12).getStringCellValue();
-            mappings.put(FieldName.EMPLOYMENT_CATEGORY,employmentCategory);
-            String trainingType = row.getCell(13).getStringCellValue();
-            mappings.put(FieldName.TRAINING_TYPE,trainingType);
-            mappings.put(FieldName.TELEPHONE,String.format("%.0f", row.getCell(14).getNumericCellValue()));
-            String workUnit = row.getCell(15).getStringCellValue();
-            mappings.put(FieldName.WORK_UNIT,workUnit);
-            String correspondenceAddress = row.getCell(16).getStringCellValue();
-            mappings.put(FieldName.CORRESPONDENCE_ADDRESS,correspondenceAddress);
+            for (int i = 0; i < dictionary.size(); i++) {
+                Cell cell = row.getCell(i);
+                String cellValue = "";
+                if (cell != null) {
+                    switch (cell.getCellType()) {
+                        case STRING:
+                            cellValue = cell.getStringCellValue();
+                            break;
+                        case NUMERIC:
+                            cellValue = String.format("%.0f", cell.getNumericCellValue());
+                            break;
+                        case BOOLEAN:
+                            cellValue = String.valueOf(cell.getBooleanCellValue());
+                            break;
+                        case FORMULA:
+                            cellValue = cell.getCellFormula();
+                            break;
+                        default:
+                            System.out.println("Unknown type");
+                    }
+                }
+                mappings.put(dictionary.get(i), cellValue);
+            }
+
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -100,7 +122,19 @@ class ReadIO {
         return mappings;
     }
 }
+
 class WriteIO {
+    HashMap<Integer, String> imageDictionary = new HashMap<>();
+    int[] imageWidth = {400, 400, 400, 150};
+    int[] imageHeight = {300, 300, 300, 200};
+
+    {
+        imageDictionary.put(1, FieldName.ICON_A);
+        imageDictionary.put(2, FieldName.ICON_B);
+        imageDictionary.put(3, FieldName.CERTIFICATE);
+        imageDictionary.put(4, FieldName.ICON_C);
+    }
+
     public void writeToDoc(HashMap<String, String> mappings) {
         try {
             WordprocessingMLPackage wordMLPackage = WordprocessingMLPackage.load(new File(FilePath.DOC_FILE_PATH));
@@ -111,36 +145,59 @@ class WriteIO {
                 JAXBElement jaxbElement = (JAXBElement) obj;
                 Text textElement = (Text) jaxbElement.getValue();
                 String text = textElement.getValue();
-                //插入文本
-                for (Map.Entry<String, String> entry : mappings.entrySet()) {
-                    if (text.contains(entry.getKey())) {
-                        textElement.setValue(text.replace(entry.getKey(), entry.getValue()));
-                    }
+                if (mappings.containsKey(text)) {
+                    textElement.setValue(mappings.get(text));
                 }
             }
             // 保存修改后的文档
-            wordMLPackage.save(new File(FilePath.FILLED_DOC_FILE_PATH_PREFIX + mappings.get(FieldName.NAME) + FilePath.FILLED_DOC_FILE_PATH_SUFFIX));
+            wordMLPackage.save(new File(FilePath.FILLED_DOC_FILE_PATH_PREFIX + mappings.get(FieldName.ID_CARD_NUMBER) + "_" + mappings.get(FieldName.NAME) + FilePath.FILLED_DOC_FILE_PATH_SUFFIX));
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-    public void insertImageToDoc(String name){
-        try{
-        String docPath = FilePath.FILLED_DOC_FILE_PATH_PREFIX + name + FilePath.FILLED_DOC_FILE_PATH_SUFFIX;
-        String imagePath1 = FilePath.ICON_FILE_PATH_PEEFIX + name + "1" + FilePath.ICON_FILE_PATH_SUFFIX;
-        String imagePath2 = FilePath.ICON_FILE_PATH_PEEFIX + name + "2" + FilePath.ICON_FILE_PATH_SUFFIX;
-        String imagePath3 = FilePath.ICON_FILE_PATH_PEEFIX + name + "3" + FilePath.ICON_FILE_PATH_SUFFIX;
-        String imagePath4 = FilePath.ICON_FILE_PATH_PEEFIX + name + "4" + FilePath.ICON_FILE_PATH_SUFFIX;
-        insertImageToDoc(docPath,imagePath1,FieldName.ICON_A,400,300);
-        insertImageToDoc(docPath,imagePath2,FieldName.ICON_B,400,300);
-        insertImageToDoc(docPath,imagePath3,FieldName.ICON_C,150,200);
-        insertImageToDoc(docPath,imagePath4,FieldName.CERTIFICATE,400,300);}
-        catch (Exception e){
+
+    public void insertImageToDoc(String name) {
+
+        try {
+            String docPath = FilePath.FILLED_DOC_FILE_PATH_PREFIX + name + FilePath.FILLED_DOC_FILE_PATH_SUFFIX;
+            for (int i = 1; i < 5; i++) {
+                String imagePath = FilePath.ICON_FILE_PATH_PEEFIX + name + i + FilePath.ICON_FILE_PATH_SUFFIX_PNG;
+                Path path = Paths.get(imagePath);
+                if (!Files.exists(path)) {
+                    imagePath = FilePath.ICON_FILE_PATH_PEEFIX + name + i + FilePath.ICON_FILE_PATH_SUFFIX_JPG;
+                }
+                insertImageToDoc(docPath, imagePath, imageDictionary.get(i), imageWidth[i - 1], imageHeight[i - 1]);
+            }
+        } catch (Exception e) {
             System.out.println("没有足够的图片");
             e.printStackTrace();
         }
     }
-    private void insertImageToDoc(String docPath,String imagePath,String tablePlaceholder,int width, int height){
+
+    public void insertImageToDoc(String IdCardNumber, String name) {
+        try {
+            String docPath = FilePath.FILLED_DOC_FILE_PATH_PREFIX + IdCardNumber + "_" + name + FilePath.FILLED_DOC_FILE_PATH_SUFFIX;
+            for (int i = 1; i < 5; i++) {
+                String imagePath = FilePath.ICON_FILE_PATH_PEEFIX + name + i + FilePath.ICON_FILE_PATH_SUFFIX_PNG;
+                Path path = Paths.get(imagePath);
+                if (Files.exists(path)) {
+                    insertImageToDoc(docPath, imagePath, imageDictionary.get(i), imageWidth[i - 1], imageHeight[i - 1]);
+                } else {
+                    imagePath = FilePath.ICON_FILE_PATH_PEEFIX + name + i + FilePath.ICON_FILE_PATH_SUFFIX_JPG;
+                    if (Files.exists(path)) {
+                        insertImageToDoc(docPath, imagePath, imageDictionary.get(i), imageWidth[i - 1], imageHeight[i - 1]);
+                    } else {
+                        System.out.println("没有足够的图片(.jpg 或 .png):" + name + i);
+                    }
+                }
+
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void insertImageToDoc(String docPath, String imagePath, String tablePlaceholder, int width, int height) {
         try (FileInputStream fis = new FileInputStream(docPath);
              XWPFDocument doc = new XWPFDocument(fis)) {
 
@@ -176,15 +233,15 @@ class WriteIO {
 }
 
 public class Main {
-    public static void main(String[] args)  {
+    public static void main(String[] args) {
 
-        for (int i = 2; i < 12; i++){
+        for (int i = 2; i < 8; i++) {
             System.out.println("Reading row " + i);
             ReadIO readIO = new ReadIO();
             HashMap<String, String> mappings = readIO.readFromExcel(i);
             WriteIO writeIO = new WriteIO();
             writeIO.writeToDoc(mappings);
-            writeIO.insertImageToDoc(mappings.get(FieldName.NAME));
+            writeIO.insertImageToDoc(mappings.get(FieldName.ID_CARD_NUMBER), mappings.get(FieldName.NAME));
         }
     }
 }
