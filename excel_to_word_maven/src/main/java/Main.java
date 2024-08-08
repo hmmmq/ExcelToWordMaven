@@ -171,10 +171,10 @@ class WriteIO {
         try {
             String docPath = FilePath.FILLED_DOC_FILE_PATH_PREFIX + name + FilePath.FILLED_DOC_FILE_PATH_SUFFIX;
             for (int i = 1; i < 5; i++) {
-                String imagePath = FilePath.ICON_FILE_PATH_PEEFIX + name + i + FilePath.ICON_FILE_PATH_SUFFIX_PNG;
+                String imagePath = FilePath.ICON_FILE_PATH_PEEFIX + name +"/"+ i + FilePath.ICON_FILE_PATH_SUFFIX_PNG;
                 Path path = Paths.get(imagePath);
                 if (!Files.exists(path)) {
-                    imagePath = FilePath.ICON_FILE_PATH_PEEFIX + name + i + FilePath.ICON_FILE_PATH_SUFFIX_JPG;
+                    imagePath = FilePath.ICON_FILE_PATH_PEEFIX + name+ "/"+  i + FilePath.ICON_FILE_PATH_SUFFIX_JPG;
                 }
                 insertImageToDoc(docPath, imagePath, imageDictionary.get(i), imageWidth[i - 1], imageHeight[i - 1]);
             }
@@ -188,17 +188,17 @@ class WriteIO {
         try {
             String docPath = FilePath.FILLED_DOC_FILE_PATH_PREFIX + IdCardNumber + "_" + name + FilePath.FILLED_DOC_FILE_PATH_SUFFIX;
             for (int i = 1; i < 5; i++) {
-                String imagePath = FilePath.ICON_FILE_PATH_PEEFIX + name + i + FilePath.ICON_FILE_PATH_SUFFIX_PNG;
+                String imagePath = FilePath.ICON_FILE_PATH_PEEFIX + name +"/"+ i + FilePath.ICON_FILE_PATH_SUFFIX_PNG;
                 Path path = Paths.get(imagePath);
                 if (Files.exists(path)) {
                     insertImageToDoc(docPath, imagePath, imageDictionary.get(i), imageWidth[i - 1], imageHeight[i - 1]);
                 } else {
-                    imagePath = FilePath.ICON_FILE_PATH_PEEFIX + name + i + FilePath.ICON_FILE_PATH_SUFFIX_JPG;
+                    imagePath = FilePath.ICON_FILE_PATH_PEEFIX + name +"/"+  i + FilePath.ICON_FILE_PATH_SUFFIX_JPG;
                     path = Paths.get(imagePath);
                     if (Files.exists(path)) {
                         insertImageToDoc(docPath, imagePath, imageDictionary.get(i), imageWidth[i - 1], imageHeight[i - 1]);
                     } else {
-                        System.out.println("没有足够的图片(.jpg 或 .png):" + name + i);
+                        System.out.println("没有足够的图片(.jpg 或 .png):" + name +"/" + i);
                     }
                 }
 
