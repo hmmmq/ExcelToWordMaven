@@ -261,6 +261,10 @@ public class Main {
             String user_input = scanner.next();
             if (user_input.equals("N")||user_input.equals("n")) {
                 System.out.println("如果字段不匹配,请检查ReadIO类里面的HashMap<Integer, String> dictionary的键值对是否正确");
+                System.out.println("若要增加字段,需要在FieldName类里面增加字段名,并且在ReadIO类里面增加对应的键值对,并且在document里面增加对应的占位符");
+                System.out.println("若要减少字段,需要在ReadIO类里面删除对应的键值对,并且在document里面删除对应的占位符");
+                System.out.println("若要修改excel字段的位置,比如姓名改成第5列数据了,需要在ReadIO类里面修改对应的键值对,将键值对的键改成4,(从0开始数列值)");
+                System.out.println("若要修改doc文档里面占位符的位置,直接doc文档里面修改占位符的位置即可");
                 System.out.println("程序退出");
                 System.exit(0);
             }
