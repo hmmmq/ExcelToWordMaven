@@ -10,6 +10,7 @@ import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
 import org.docx4j.openpackaging.parts.WordprocessingML.MainDocumentPart;
+import org.docx4j.wml.R;
 import org.docx4j.wml.Text;
 
 import java.nio.file.Files;
@@ -62,6 +63,7 @@ class FieldName {
 class ReadIO {
     HashMap<Integer, String> dictionary = new HashMap<>();
 
+
     {
         dictionary.put(0, FieldName.NO);
         dictionary.put(1, FieldName.NAME);
@@ -80,6 +82,13 @@ class ReadIO {
         dictionary.put(14, FieldName.TELEPHONE);
         dictionary.put(15, FieldName.WORK_UNIT);
 //        dictionary.put(16, FieldName.CORRESPONDENCE_ADDRESS);
+    }
+    public HashMap<Integer, String> getDictionary() {
+        return dictionary;
+    }
+
+    public void setDictionary(HashMap<Integer, String> dictionary) {
+        this.dictionary = dictionary;
     }
 
     public HashMap<String, String> readFromExcel(int row_id) {
@@ -110,7 +119,7 @@ class ReadIO {
                             cellValue = cell.getCellFormula();
                             break;
                         default:
-                            System.out.println("Unknown type");
+                            cellValue = "";
                     }
                 }
                 mappings.put(dictionary.get(i), cellValue);
@@ -240,11 +249,27 @@ public class Main {
          Scanner scanner = new Scanner(System.in);
          System.out.println("请输入excel最后一行的序号：");
          int last_row = scanner.nextInt();
+         //询问打印已知字段跟用户核对
+            System.out.println("请核对以下字段是否正确：");
+            ReadIO excel_dictionary_readio = new ReadIO();
+            HashMap<Integer, String> excel_dictionary = excel_dictionary_readio.getDictionary();
+            for (Map.Entry<Integer, String> entry : excel_dictionary.entrySet()) {
+                System.out.println("第" + entry.getKey() + "列数据对应word文档里面的占位符：" + entry.getValue());
+            }
+            //用户核对完之后要用户打Y或者N,如果打Y则继续，如果打N则退出
+            System.out.println("请核对完毕后输入Y或y继续，输入N或n退出：");
+            String user_input = scanner.next();
+            if (user_input.equals("N")||user_input.equals("n")) {
+                System.out.println("如果字段不匹配,请检查ReadIO类里面的HashMap<Integer, String> dictionary的键值对是否正确");
+                System.out.println("程序退出");
+                System.exit(0);
+            }
+
         for (int i = 0; i < last_row; i++) {
             System.out.println("Reading row " + i);
             ReadIO readIO = new ReadIO();
             HashMap<String, String> mappings = readIO.readFromExcel(i);
-            if (mappings.isEmpty()) {
+            if (mappings.get(FieldName.NAME)==""||mappings.get(FieldName.ID_CARD_NUMBER)=="") {
                 continue;
             }
             WriteIO writeIO = new WriteIO();
