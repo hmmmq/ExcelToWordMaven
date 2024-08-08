@@ -18,6 +18,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 
 class FilePath {
     // Path to the file
@@ -184,6 +185,7 @@ class WriteIO {
                     insertImageToDoc(docPath, imagePath, imageDictionary.get(i), imageWidth[i - 1], imageHeight[i - 1]);
                 } else {
                     imagePath = FilePath.ICON_FILE_PATH_PEEFIX + name + i + FilePath.ICON_FILE_PATH_SUFFIX_JPG;
+                    path = Paths.get(imagePath);
                     if (Files.exists(path)) {
                         insertImageToDoc(docPath, imagePath, imageDictionary.get(i), imageWidth[i - 1], imageHeight[i - 1]);
                     } else {
@@ -234,11 +236,17 @@ class WriteIO {
 
 public class Main {
     public static void main(String[] args) {
-
-        for (int i = 2; i < 8; i++) {
+        //让用户输入行数
+         Scanner scanner = new Scanner(System.in);
+         System.out.println("请输入excel最后一行的序号：");
+         int last_row = scanner.nextInt();
+        for (int i = 0; i < last_row; i++) {
             System.out.println("Reading row " + i);
             ReadIO readIO = new ReadIO();
             HashMap<String, String> mappings = readIO.readFromExcel(i);
+            if (mappings.isEmpty()) {
+                continue;
+            }
             WriteIO writeIO = new WriteIO();
             writeIO.writeToDoc(mappings);
             writeIO.insertImageToDoc(mappings.get(FieldName.ID_CARD_NUMBER), mappings.get(FieldName.NAME));
