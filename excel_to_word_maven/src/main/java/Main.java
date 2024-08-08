@@ -1,4 +1,5 @@
 import jakarta.xml.bind.JAXBElement;
+import org.apache.poi.ss.formula.functions.T;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
@@ -12,6 +13,7 @@ import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
 import org.docx4j.openpackaging.parts.WordprocessingML.MainDocumentPart;
 import org.docx4j.wml.R;
 import org.docx4j.wml.Text;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTSym;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,13 +25,11 @@ import java.util.Scanner;
 
 class FilePath {
     // Path to the file
-    public static final String EXCEL_FILE_PATH = "src/main/resources/excel2.xlsx";
-    public static final String DOC_FILE_PATH = "src/main/resources/application2.docx";
-
+    public static final String EXCEL_FILE_PATH = "src/main/resources/excel3.xlsx";
+    public static final String DOC_FILE_PATH = "src/main/resources/特种作业操作资格证申请表_模板.docx";
     public static final String ICON_FILE_PATH_PEEFIX = "src/main/resources/icon/";
     public static final String ICON_FILE_PATH_SUFFIX_PNG = ".png";
     public static final String ICON_FILE_PATH_SUFFIX_JPG = ".jpg";
-
     public static final String FILLED_DOC_FILE_PATH_PREFIX = "src/main/resources/";
     public static final String FILLED_DOC_FILE_PATH_SUFFIX = ".docx";
 }
@@ -47,12 +47,11 @@ class FieldName {
     public static final String PERSONAL_HEALTH_COMMITMENT_LETTER = "PERSONAL_HEALTH_COMMITMENT_LETTER";
     public static final String PHYSICAL_CONDITION = "PHYSICAL_CONDITION";
     public static final String JOB_POSITION = "JOB_POSITION";
-    public static final String APPLICATION_PROJECT = "APPLICATION_PROJECT";
-    public static final String EMPLOYMENT_CATEGORY = "EMPLOYMENT_CATEGORY";
-    public static final String TRAINING_TYPE = "TRAINING_TYPE";
+    public static final String PROJECT_CATEGORY = "PROJECT_CATEGORY";
+    public static final String PROJECT = "PROJECT";
+    public static final String APPLICATION_TYPE = "APPLICATION_TYPE";
     public static final String TELEPHONE = "TELEPHONE";
     public static final String WORK_UNIT = "WORK_UNIT";
-    public static final String CORRESPONDENCE_ADDRESS = "CORRESPONDENCE_ADDRESS";
     public static final String ICON_A = "ICON_A";
     public static final String ICON_B = "ICON_B";
     public static final String ICON_C = "ICON_C";
@@ -76,12 +75,11 @@ class ReadIO {
         dictionary.put(8, FieldName.PERSONAL_HEALTH_COMMITMENT_LETTER);
         dictionary.put(9, FieldName.PHYSICAL_CONDITION);
         dictionary.put(10, FieldName.JOB_POSITION);
-        dictionary.put(11, FieldName.APPLICATION_PROJECT);
-        dictionary.put(12, FieldName.EMPLOYMENT_CATEGORY);
-        dictionary.put(13, FieldName.TRAINING_TYPE);
+        dictionary.put(11, FieldName.PROJECT_CATEGORY);
+        dictionary.put(12, FieldName.PROJECT);
+        dictionary.put(13, FieldName.APPLICATION_TYPE);
         dictionary.put(14, FieldName.TELEPHONE);
         dictionary.put(15, FieldName.WORK_UNIT);
-//        dictionary.put(16, FieldName.CORRESPONDENCE_ADDRESS);
     }
     public HashMap<Integer, String> getDictionary() {
         return dictionary;
@@ -106,23 +104,34 @@ class ReadIO {
                 String cellValue = "";
                 if (cell != null) {
                     switch (cell.getCellType()) {
-                        case STRING:
-                            cellValue = cell.getStringCellValue();
-                            break;
+                        //如果是年月日
                         case NUMERIC:
                             cellValue = String.format("%.0f", cell.getNumericCellValue());
+                            break;
+                        case STRING:
+                            cellValue = cell.getStringCellValue();
                             break;
                         case BOOLEAN:
                             cellValue = String.valueOf(cell.getBooleanCellValue());
                             break;
-                        case FORMULA:
-                            cellValue = cell.getCellFormula();
-                            break;
+//                        case FORMULA:
+//                            break;
                         default:
                             cellValue = "";
                     }
                 }
+                if (dictionary.get(i).equals(FieldName.DATE_OF_BIRTH)) {
+                    continue;
+                }
                 mappings.put(dictionary.get(i), cellValue);
+                if (dictionary.get(i).equals(FieldName.ID_CARD_NUMBER)&&cellValue.length() == 18) {
+
+                   //计算年月日
+                    String year = cellValue.substring(6, 10);
+                    String month = cellValue.substring(10, 12);
+                    String day = cellValue.substring(12, 14);
+                    mappings.put(FieldName.DATE_OF_BIRTH, year + "年" + month + "月" + day + "日");
+                }
             }
 
 
@@ -158,6 +167,11 @@ class WriteIO {
                 if (mappings.containsKey(text)) {
                     textElement.setValue(mappings.get(text));
                 }
+                if(text.contains(mappings.get(FieldName.APPLICATION_TYPE))){
+                    JAXBElement checkbox = (JAXBElement)texts.get(texts.indexOf(obj)+1);
+                    Text checkboxValue = (Text) checkbox.getValue();
+                    checkboxValue.setValue(Character.toString('\u2611'));
+                }
             }
             // 保存修改后的文档
             wordMLPackage.save(new File(FilePath.FILLED_DOC_FILE_PATH_PREFIX + mappings.get(FieldName.ID_CARD_NUMBER) + "_" + mappings.get(FieldName.NAME) + FilePath.FILLED_DOC_FILE_PATH_SUFFIX));
@@ -171,10 +185,10 @@ class WriteIO {
         try {
             String docPath = FilePath.FILLED_DOC_FILE_PATH_PREFIX + name + FilePath.FILLED_DOC_FILE_PATH_SUFFIX;
             for (int i = 1; i < 5; i++) {
-                String imagePath = FilePath.ICON_FILE_PATH_PEEFIX + name + i + FilePath.ICON_FILE_PATH_SUFFIX_PNG;
+                String imagePath = FilePath.ICON_FILE_PATH_PEEFIX +name  + "/" + i + FilePath.ICON_FILE_PATH_SUFFIX_PNG;
                 Path path = Paths.get(imagePath);
                 if (!Files.exists(path)) {
-                    imagePath = FilePath.ICON_FILE_PATH_PEEFIX + name + i + FilePath.ICON_FILE_PATH_SUFFIX_JPG;
+                    imagePath = FilePath.ICON_FILE_PATH_PEEFIX + name  + "/" + i + FilePath.ICON_FILE_PATH_SUFFIX_JPG;
                 }
                 insertImageToDoc(docPath, imagePath, imageDictionary.get(i), imageWidth[i - 1], imageHeight[i - 1]);
             }
@@ -188,12 +202,12 @@ class WriteIO {
         try {
             String docPath = FilePath.FILLED_DOC_FILE_PATH_PREFIX + IdCardNumber + "_" + name + FilePath.FILLED_DOC_FILE_PATH_SUFFIX;
             for (int i = 1; i < 5; i++) {
-                String imagePath = FilePath.ICON_FILE_PATH_PEEFIX + name + i + FilePath.ICON_FILE_PATH_SUFFIX_PNG;
+                String imagePath = FilePath.ICON_FILE_PATH_PEEFIX  +name  + "/" + i + FilePath.ICON_FILE_PATH_SUFFIX_PNG;
                 Path path = Paths.get(imagePath);
                 if (Files.exists(path)) {
                     insertImageToDoc(docPath, imagePath, imageDictionary.get(i), imageWidth[i - 1], imageHeight[i - 1]);
                 } else {
-                    imagePath = FilePath.ICON_FILE_PATH_PEEFIX + name + i + FilePath.ICON_FILE_PATH_SUFFIX_JPG;
+                    imagePath = FilePath.ICON_FILE_PATH_PEEFIX +name + "/" + i + FilePath.ICON_FILE_PATH_SUFFIX_JPG;
                     path = Paths.get(imagePath);
                     if (Files.exists(path)) {
                         insertImageToDoc(docPath, imagePath, imageDictionary.get(i), imageWidth[i - 1], imageHeight[i - 1]);
@@ -241,6 +255,47 @@ class WriteIO {
             e.printStackTrace();
         }
     }
+    public void checkCheckBoxBeforeField(String filePath, String targetField) throws IOException {
+        try (FileInputStream fis = new FileInputStream(filePath)) {
+            XWPFDocument document = new XWPFDocument(fis);
+            // 遍历文档中的所有表格
+            for (XWPFTable table : document.getTables()) {
+                for (XWPFTableRow row : table.getRows()) {
+                    for (XWPFTableCell cell : row.getTableCells()) {
+                        // 检查单元格中的段落
+                        for (XWPFParagraph paragraph : cell.getParagraphs()) {
+                            List<XWPFRun> runs = paragraph.getRuns();
+                            for (int i = 0; i < runs.size(); i++) {
+                                XWPFRun run = runs.get(i);
+                                String text = run.getText(0);
+                                // 如果当前运行包含目标字段
+                                if (text != null && text.contains(targetField)&&i>0) {
+                                    XWPFRun run_check_box = runs.get(i-1);
+                                    String checkBoxText = run_check_box.getText(0);
+                                    if (checkBoxText != null) {
+                                        //对勾符号
+                                        char checkMark = '\u2611';
+                                        checkBoxText = Character.toString(checkMark) ;
+                                        run_check_box.setText(checkBoxText, 0);
+                                    }
+
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 保存修改后的文档
+            try (FileOutputStream fos = new FileOutputStream(filePath)) {
+                document.write(fos);
+            }catch (Exception e) {
+                e.printStackTrace();
+            }
+        }catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }
 
 public class Main {
@@ -279,6 +334,13 @@ public class Main {
             }
             WriteIO writeIO = new WriteIO();
             writeIO.writeToDoc(mappings);
+            String file_path = FilePath.FILLED_DOC_FILE_PATH_PREFIX + mappings.get(FieldName.ID_CARD_NUMBER) + "_" + mappings.get(FieldName.NAME) + FilePath.FILLED_DOC_FILE_PATH_SUFFIX;
+            try {
+                writeIO.checkCheckBoxBeforeField(file_path,mappings.get(FieldName.PROJECT_CATEGORY));
+                writeIO.checkCheckBoxBeforeField(file_path,mappings.get(FieldName.PROJECT));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
             writeIO.insertImageToDoc(mappings.get(FieldName.ID_CARD_NUMBER), mappings.get(FieldName.NAME));
         }
     }
