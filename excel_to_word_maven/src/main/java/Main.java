@@ -57,6 +57,7 @@ class FieldName {
     public static final String ICON_C = "ICON_C";
     public static final String CERTIFICATE = "CERTIFICATE";
 
+    public static final String RPOVEMENT = "RPOVEMENT";
 }
 
 class ReadIO {
@@ -144,14 +145,15 @@ class ReadIO {
 
 class WriteIO {
     HashMap<Integer, String> imageDictionary = new HashMap<>();
-    int[] imageWidth = {400, 400, 400, 150};
-    int[] imageHeight = {300, 300, 300, 200};
+    int[] imageWidth = {400, 400, 400, 150, 500};
+    int[] imageHeight = {300, 300, 300, 200, 500};
 
     {
         imageDictionary.put(1, FieldName.ICON_A);
         imageDictionary.put(2, FieldName.ICON_B);
         imageDictionary.put(3, FieldName.CERTIFICATE);
         imageDictionary.put(4, FieldName.ICON_C);
+        imageDictionary.put(5,FieldName.RPOVEMENT);
     }
 
     public void writeToDoc(HashMap<String, String> mappings) {
@@ -201,7 +203,11 @@ class WriteIO {
     public void insertImageToDoc(String IdCardNumber, String name) {
         try {
             String docPath = FilePath.FILLED_DOC_FILE_PATH_PREFIX + IdCardNumber + "_" + name + FilePath.FILLED_DOC_FILE_PATH_SUFFIX;
-            for (int i = 1; i < 5; i++) {
+            for (int i = 1; i < 6; i++) {
+                //如果idcardnumber 不是“64”开头,则插入第五张图片,是64开头则跳过
+                if(i==5 && IdCardNumber.charAt(0)=='6'&&IdCardNumber.charAt(1)=='4'){
+                    continue;
+                }
                 String imagePath = FilePath.ICON_FILE_PATH_PEEFIX  +name  + "/" + i + FilePath.ICON_FILE_PATH_SUFFIX_PNG;
                 Path path = Paths.get(imagePath);
                 if (Files.exists(path)) {
@@ -217,6 +223,7 @@ class WriteIO {
                 }
 
             }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
