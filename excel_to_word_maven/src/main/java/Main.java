@@ -1,5 +1,4 @@
 import jakarta.xml.bind.JAXBElement;
-import org.apache.poi.ss.formula.functions.T;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
@@ -11,9 +10,7 @@ import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
 import org.docx4j.openpackaging.parts.WordprocessingML.MainDocumentPart;
-import org.docx4j.wml.R;
 import org.docx4j.wml.Text;
-import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTSym;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,8 +22,8 @@ import java.util.Scanner;
 
 class FilePath {
     // Path to the file
-    public static final String EXCEL_FILE_PATH = "src/main/resources/excel3.xlsx";
-    public static final String DOC_FILE_PATH = "src/main/resources/特种作业操作资格证申请表_模板.docx";
+    public static final String EXCEL_FILE_PATH = "src/main/resources/special_work.xlsx";
+    public static final String DOC_FILE_PATH = "src/main/resources/安全生产知识_模板.docx";
     public static final String ICON_FILE_PATH_PEEFIX = "src/main/resources/icon/";
     public static final String ICON_FILE_PATH_SUFFIX_PNG = ".png";
     public static final String ICON_FILE_PATH_SUFFIX_JPG = ".jpg";
@@ -49,9 +46,13 @@ class FieldName {
     public static final String Excel_10 = "JOB_POSITION";
     public static final String Excel_11 = "PROJECT_CATEGORY";
     public static final String Excel_12 = "PROJECT";
-    public static final String Excel_13 = "APPLICATION_TYPE";
-    public static final String Excel_14 = "TELEPHONE";
-    public static final String Excel_15 = "WORK_UNIT";
+    public static final String Excel_13 = "EMPLOYMENT";
+    public static final String Excel_14 = "APPLICATION_TYPE";
+    public static final String Excel_15 = "TELEPHONE";
+    public static final String Excel_16 = "WORK_UNIT";
+    public static final String Excel_17 = "CORRESPONDENCE_ADDRESS";
+
+
     public static final String PIC_1 = "PIC_1";
     public static final String PIC_2 = "PIC_2";
     public static final String PIC_3 = "PIC_3";
@@ -81,6 +82,8 @@ class ReadIO {
         dictionary.put(13, FieldName.Excel_13);
         dictionary.put(14, FieldName.Excel_14);
         dictionary.put(15, FieldName.Excel_15);
+        dictionary.put(16, FieldName.Excel_16);
+        dictionary.put(17, FieldName.Excel_17);
     }
 
     public HashMap<Integer, String> getDictionary() {
@@ -153,6 +156,24 @@ class WriteIO {
         imageDictionary.put(3, FieldName.PIC_3);
         imageDictionary.put(4, FieldName.PIC_4);
         imageDictionary.put(5, FieldName.PIC_5);
+    }
+
+    private static boolean isaCheckBoxBack(int targetFieldIndex, int length, String text) {
+        return targetFieldIndex + length < text.length() && (text.charAt(targetFieldIndex + length) == '\u25A1' || text.charAt(targetFieldIndex + length) == '\u25A2' || text.charAt(targetFieldIndex + length) == '口' || text.charAt(targetFieldIndex + length) == '☐'
+                || text.charAt(targetFieldIndex + length) == '¨'
+        );
+    }
+
+    private static boolean isaCheckBoxFront(int targetFieldIndex, String text) {
+        return targetFieldIndex - 1 >= 0 && (text.charAt(targetFieldIndex - 1) == '\u25A1' || text.charAt(targetFieldIndex - 1) == '\u25A2' || text.charAt(targetFieldIndex - 1) == '口' || text.charAt(targetFieldIndex - 1) == '☐'
+                || text.charAt(targetFieldIndex - 1) == '¨'
+        );
+    }
+
+    private static boolean isaCheckBox(String checkBoxText) {
+        return checkBoxText.length() == 1 && (checkBoxText.charAt(0) == '\u25A1' || checkBoxText.charAt(0) == '\u25A2' || checkBoxText.charAt(0) == '口' || checkBoxText.charAt(0) == '☐'
+                || checkBoxText.charAt(0) == '¨'
+        );
     }
 
     public void writeToDoc(HashMap<String, String> mappings) {
@@ -259,8 +280,10 @@ class WriteIO {
     }
 
     public void checkCheckBoxInForm(String filePath, String targetField) throws IOException {
-        System.out.println("给表格型勾选框打勾");
-        System.out.println("打勾字段: " + targetField);
+        boolean flag = false;
+        System.out.println("-------------给表格型勾选框打勾----------------------");
+        System.out.println("------------打勾字段: " + targetField+"-------------------");
+        targetField = targetField.trim();
         try (FileInputStream fis = new FileInputStream(filePath)) {
             XWPFDocument document = new XWPFDocument(fis);
             // 遍历文档中的所有表格
@@ -273,24 +296,129 @@ class WriteIO {
                             for (int i = 0; i < runs.size(); i++) {
                                 XWPFRun run = runs.get(i);
                                 String text = run.getText(0);
-                                // 如果当前运行包含目标字段,默认勾选框在前边
-                                if (text != null && text.contains(targetField) && i > 0) {
-                                    XWPFRun run_check_box = runs.get(i - 1);
-                                    String checkBoxText = run_check_box.getText(0);
-                                    if (checkBoxText != null) {
-                                        //对勾符号
+                                text = text.trim();
+                                // 如果读取的文本行包含目标字段但不包含勾选框
+                                if (text != null && text.equals(targetField) && i > 0) {
+                                    //检查字段前面的勾选框
+                                    XWPFRun run_check_box_front = runs.get(i - 1);
+                                    String checkBoxText = run_check_box_front.getText(0);
+                                    checkBoxText = checkBoxText.trim();
+                                    //System.out.println(checkBoxText);
+                                    if (isaCheckBox(checkBoxText)) {
                                         char checkMark = '\u2611';
                                         checkBoxText = Character.toString(checkMark);
-                                        run_check_box.setText(checkBoxText, 0);
+                                        run_check_box_front.setText(checkBoxText, 0);
+                                        System.out.println("已经勾选");
+                                        flag = true;
+                                        break;
+                                    }else if(checkBoxText.equals("\u2611")){
+                                        System.out.println("该勾选框被别的字段勾选过");
+                                        continue;
+                                    }
+                                    if (!flag && i < runs.size() - 1) {
+                                        //如果前面没找到,检查字段后面的勾选框
+                                        XWPFRun run_check_box_back = runs.get(i + 1);
+                                        checkBoxText = run_check_box_back.getText(0);
+                                        checkBoxText = checkBoxText.trim();
+                                        //System.out.println(checkBoxText);
+                                        if (isaCheckBox(checkBoxText)) {
+                                            char checkMark = '\u2611';
+                                            checkBoxText = Character.toString(checkMark);
+                                            run_check_box_back.setText(checkBoxText, 0);
+                                            System.out.println("已经勾选");
+                                            flag = true;
+                                            break;
+                                        }
+                                    }
+                                    if(!flag){
+                                        System.out.println("没有找到勾选框");
+
+                                    }
+
+                                } else if (text != null && text.contains(targetField) && i == 0) {
+                                    // 如果读取的文本行包含目标字段且包含勾选框
+                                    int length = targetField.length();
+                                    //查找targetField的位置
+                                    int targetFieldIndex = text.indexOf(targetField);
+                                    //在targetField前后一个位置查找checkbox
+                                    if (isaCheckBoxFront(targetFieldIndex, text)) {
+                                        text = text.substring(0, targetFieldIndex - 1) + '\u2611' + text.substring(targetFieldIndex);
+                                        run.setText(text, 0);
+                                        System.out.println("已经勾选");
+                                        flag = true;
+                                        break;
+                                    } else if(isCheckedBox(targetFieldIndex, text)){
+                                        System.out.println("该勾选框被别的字段勾选过");
+
+                                    }
+                                    else if (isaCheckBoxBack(targetFieldIndex, length, text)) {
+                                        text = text.substring(0, targetFieldIndex + length) + '\u2611' + text.substring(targetFieldIndex + length + 1);
+                                        run.setText(text, 0);
+                                        System.out.println("已经勾选");
+                                        flag = true;
+                                        break;
+                                    } else {
+                                        System.out.println("没有找到勾选框");
+                                    }
+
+                                } else if (text != null && targetField.contains(text)&&text.trim().length()>0) {
+
+//                                    System.out.println("请检查文档中的该字段:\"" + text + "\"和excel字段:\"" + targetField + "\"是否正确");
+
+                                    //检查字段前面的勾选框
+                                    if (i > 0) {
+                                        XWPFRun run_check_box_front = runs.get(i - 1);
+                                        String checkBoxText = run_check_box_front.getText(0);
+                                        checkBoxText = checkBoxText.trim();
+                                        //System.out.println(checkBoxText);
+                                        if (isaCheckBox(checkBoxText)) {
+                                            char checkMark = '\u2611';
+                                            checkBoxText = Character.toString(checkMark);
+                                            run_check_box_front.setText(checkBoxText, 0);
+                                            System.out.println("已经勾选");
+                                            flag = true;
+                                            break;
+                                        }else if(checkBoxText.equals("\u2611")){
+                                            System.out.println("该勾选框被别的字段勾选过");
+                                            continue;
+                                        }
+
+                                    }
+
+                                    if (!flag && i < runs.size() - 1) {
+                                        //如果前面没找到,检查字段后面的勾选框
+                                        XWPFRun run_check_box_back = runs.get(i + 1);
+                                        String checkBoxText = run_check_box_back.getText(0);
+                                        checkBoxText = checkBoxText.trim();
+                                        if (isaCheckBox(checkBoxText)) {
+                                            char checkMark = '\u2611';
+                                            checkBoxText = Character.toString(checkMark);
+                                            run_check_box_back.setText(checkBoxText, 0);
+                                            System.out.println("已经勾选");
+                                            flag = true;
+                                            break;
+                                        }
+                                    }
+                                    if (!flag) {
+                                        System.out.println("没有找到excel字段相应的勾选框");
                                     }
 
                                 }
-
-
                             }
                         }
+                        if (flag) {
+                            break;
+                        }
+                    }
+                    if (flag) {
+                        break;
                     }
                 }
+
+                if (flag) {
+                    break;
+                }
+
             }
 
             // 保存修改后的文档
@@ -304,9 +432,16 @@ class WriteIO {
         }
     }
 
+    private boolean isCheckedBox(int targetFieldIndex, String text) {
+        if (targetFieldIndex<1){return false;}
+        System.out.println("检查是否已经勾选");
+        return targetFieldIndex - 1 >= 0 && (text.charAt(targetFieldIndex - 1)==('\u2611'));
+    }
+
     public void checkCheckBoxInDoc(String filePath, String targetField) {
-        System.out.println("给文档型勾选框打勾");
-        System.out.println("打勾字段: " + targetField);
+        System.out.println("------------------给文档型勾选框打勾------------------------");
+        System.out.println("------------------打勾字段: " + targetField+"--------------");
+        targetField = targetField.trim();
         try {
             WordprocessingMLPackage wordMLPackage = WordprocessingMLPackage.load(new File(filePath));
             MainDocumentPart documentPart = wordMLPackage.getMainDocumentPart();
@@ -316,10 +451,27 @@ class WriteIO {
                 JAXBElement jaxbElement = (JAXBElement) obj;
                 Text textElement = (Text) jaxbElement.getValue();
                 String text = textElement.getValue();
-                if (text.contains(targetField)) {
+                //检查文本后面的勾选框
+                if (text.contains(targetField) && texts.indexOf(obj) + 1 < texts.size()) {
                     JAXBElement checkbox = (JAXBElement) texts.get(texts.indexOf(obj) + 1);
                     Text checkboxValue = (Text) checkbox.getValue();
-                    checkboxValue.setValue(Character.toString('\u2611'));
+                    String checkboxtext = checkboxValue.getValue();
+                    if(isaCheckBox(checkboxtext)){
+                        checkboxValue.setValue(Character.toString('\u2611'));
+                        System.out.println("已经勾选");
+                        break;
+                    }
+                }
+                //检查文本前面的勾选框
+                if (text.contains(targetField) && texts.indexOf(obj) - 1 >= 0) {
+                    JAXBElement checkbox = (JAXBElement) texts.get(texts.indexOf(obj) - 1);
+                    Text checkboxValue = (Text) checkbox.getValue();
+                    String checkboxtext = checkboxValue.getValue();
+                    if (isaCheckBox(checkboxtext)){
+                        checkboxValue.setValue(Character.toString('\u2611'));
+                        System.out.println("已经勾选");
+                        break;
+                    }
                 }
             }
             // 保存修改后的文档
@@ -365,10 +517,11 @@ public class Main {
         }
         //------------------------------------
         //询问用户哪几列是打勾字段
+        System.out.println("请检查模板文档里面打勾字段的格式和字符为: □ ,请确保模板文档里面的打勾字符是这个字符");
         System.out.println("请问哪几列是打勾字段且打勾字段在模板文档的[表格]里？");
         System.out.println("请输入打勾字段的序号，以英文分号;分隔：");
         String checkBoxColumns = scanner.next();
-        System.out.println("你输入的为:"+checkBoxColumns);
+        System.out.println("你输入的为:" + checkBoxColumns);
         //将checkBoxColumns转换成数字数组
         String[] checkBoxColumnsArray = checkBoxColumns.split(";");
         int[] checkBoxColumnsInt = new int[checkBoxColumnsArray.length];
@@ -382,7 +535,7 @@ public class Main {
         System.out.println("请问哪几列是打勾字段且打勾字段在模板文档的[文本行]里？");
         System.out.println("请输入打勾字段的序号，以英文分号;分隔：");
         String checkBoxColumns2 = scanner.next();
-        System.out.println("你输入的为:"+checkBoxColumns2);
+        System.out.println("你输入的为:" + checkBoxColumns2);
         //将checkBoxColumns转换成数字数组
         String[] checkBoxColumnsArray2 = checkBoxColumns2.split(";");
         int[] checkBoxColumnsInt2 = new int[checkBoxColumnsArray2.length];
