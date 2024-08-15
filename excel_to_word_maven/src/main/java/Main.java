@@ -176,30 +176,7 @@ class WriteIO {
         }
     }
 
-    public void checkCheckBoxInDoc(String filePath, String targetField) {
-
-        try {
-            WordprocessingMLPackage wordMLPackage = WordprocessingMLPackage.load(new File(filePath));
-            MainDocumentPart documentPart = wordMLPackage.getMainDocumentPart();
-            // 遍历文档的所有文本节点，进行替换
-            List<Object> texts = documentPart.getJAXBNodesViaXPath("//w:t", true);
-            for (Object obj : texts) {
-                JAXBElement jaxbElement = (JAXBElement) obj;
-                Text textElement = (Text) jaxbElement.getValue();
-                String text = textElement.getValue();
-                if (text.contains(targetField)) {
-                    JAXBElement checkbox = (JAXBElement) texts.get(texts.indexOf(obj) + 1);
-                    Text checkboxValue = (Text) checkbox.getValue();
-                    checkboxValue.setValue(Character.toString('\u2611'));
-                }
-            }
-            // 保存修改后的文档
-            wordMLPackage.save(new File(filePath));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
+    @Deprecated
     public void insertImageToDoc(String name) {
 
         try {
@@ -282,9 +259,8 @@ class WriteIO {
     }
 
     public void checkCheckBoxInForm(String filePath, String targetField) throws IOException {
-        System.out.println("Checking checkbox in form");
-        System.out.println("filePath: " + filePath);
-        System.out.println("Target field: " + targetField);
+        System.out.println("给表格型勾选框打勾");
+        System.out.println("打勾字段: " + targetField);
         try (FileInputStream fis = new FileInputStream(filePath)) {
             XWPFDocument document = new XWPFDocument(fis);
             // 遍历文档中的所有表格
@@ -327,6 +303,32 @@ class WriteIO {
             e.printStackTrace();
         }
     }
+
+    public void checkCheckBoxInDoc(String filePath, String targetField) {
+        System.out.println("给文档型勾选框打勾");
+        System.out.println("打勾字段: " + targetField);
+        try {
+            WordprocessingMLPackage wordMLPackage = WordprocessingMLPackage.load(new File(filePath));
+            MainDocumentPart documentPart = wordMLPackage.getMainDocumentPart();
+            // 遍历文档的所有文本节点，进行替换
+            List<Object> texts = documentPart.getJAXBNodesViaXPath("//w:t", true);
+            for (Object obj : texts) {
+                JAXBElement jaxbElement = (JAXBElement) obj;
+                Text textElement = (Text) jaxbElement.getValue();
+                String text = textElement.getValue();
+                if (text.contains(targetField)) {
+                    JAXBElement checkbox = (JAXBElement) texts.get(texts.indexOf(obj) + 1);
+                    Text checkboxValue = (Text) checkbox.getValue();
+                    checkboxValue.setValue(Character.toString('\u2611'));
+                }
+            }
+            // 保存修改后的文档
+            wordMLPackage.save(new File(filePath));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 }
 
 public class Main {
@@ -366,36 +368,34 @@ public class Main {
         System.out.println("请问哪几列是打勾字段且打勾字段在模板文档的[表格]里？");
         System.out.println("请输入打勾字段的序号，以英文分号;分隔：");
         String checkBoxColumns = scanner.next();
-        System.out.println(checkBoxColumns);
+        System.out.println("你输入的为:"+checkBoxColumns);
         //将checkBoxColumns转换成数字数组
         String[] checkBoxColumnsArray = checkBoxColumns.split(";");
-
         int[] checkBoxColumnsInt = new int[checkBoxColumnsArray.length];
         //打印checkBoxColumnsInt数组
         for (int i = 0; i < checkBoxColumnsArray.length; i++) {
             checkBoxColumnsInt[i] = Integer.parseInt(checkBoxColumnsArray[i]);
-            System.out.println(checkBoxColumnsInt[i]);
+//            System.out.println(checkBoxColumnsInt[i]);
         }
         //------------------------------------
         //询问用户哪几列是打勾字段
         System.out.println("请问哪几列是打勾字段且打勾字段在模板文档的[文本行]里？");
         System.out.println("请输入打勾字段的序号，以英文分号;分隔：");
         String checkBoxColumns2 = scanner.next();
-        System.out.println(checkBoxColumns2);
+        System.out.println("你输入的为:"+checkBoxColumns2);
         //将checkBoxColumns转换成数字数组
         String[] checkBoxColumnsArray2 = checkBoxColumns2.split(";");
-
         int[] checkBoxColumnsInt2 = new int[checkBoxColumnsArray2.length];
         //打印checkBoxColumnsInt数组
         for (int i = 0; i < checkBoxColumnsArray2.length; i++) {
             checkBoxColumnsInt2[i] = Integer.parseInt(checkBoxColumnsArray2[i]);
-            System.out.println(checkBoxColumnsInt2[i]);
+//            System.out.println(checkBoxColumnsInt2[i]);
         }
 
         //------------------------------------
         //开始读取excel文件,并填写doc文件
         for (int i = 0; i < last_row; i++) {
-            System.out.println("Reading row " + i);
+            System.out.println("-----------读取第" + i + "行数据-------------");
             ReadIO readIO = new ReadIO();
             //构建键值对mappings
             HashMap<String, String> mappings = readIO.readFromExcel(i);
